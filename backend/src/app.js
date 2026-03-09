@@ -1,5 +1,3 @@
-// app.js — Express app WITHOUT server.listen()
-// Shared by: Vercel (api/index.js) AND Azure/local (backend/src/server.js)
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -24,7 +22,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.get('/health',     (req, res) => res.json({ status: 'ok', platform: process.env.PLATFORM || 'unknown', ts: new Date().toISOString() }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', platform: process.env.PLATFORM || 'unknown', ts: new Date().toISOString() }));
 
-// API Routes
+// API Routes — mounted at BOTH /api/* and /* for Vercel compatibility
 app.use('/api/auth',      authRoutes);
 app.use('/api/users',     usersRoutes);
 app.use('/api/companies', companiesRouter);
@@ -34,10 +32,20 @@ app.use('/api/credits',   creditsRouter);
 app.use('/api/generate',  generateRoutes);
 app.use('/api/payments',  paymentsRoutes);
 
-// 404 for unknown API routes
-app.use('/api/*', (req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
+// Also mount without /api prefix (Vercel strips /api from URL)
+app.use('/auth',      authRoutes);
+app.use('/users',     usersRoutes);
+app.use('/companies', companiesRouter);
+app.use('/avatars',   avatarsRouter);
+app.use('/jobs',      jobsRouter);
+app.use('/credits',   creditsRouter);
+app.use('/generate',  generateRoutes);
+app.use('/payments',  paymentsRoutes);
 
-// Global error handler (must be last)
+// 404 handler
+app.use((req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
+
+// Global error handler
 app.use(errorHandler);
 
 export default app;
