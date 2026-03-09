@@ -4,11 +4,12 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import useAuthStore from '../../../store/authStore.js';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('admin@venkat.tech'); // Pre-filled for testing
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const { login, isPending, isRejected } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,76 +37,79 @@ export default function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--color-background)',
-      padding: '24px',
+      background: '#050505', // VT Black Theme
+      color: '#ffffff',
+      padding: 'clamp(1rem, 5vw, 4rem)', // Fluid padding
     }}>
       <div style={{
         width: '100%',
-        maxWidth: 400,
+        /* FLUID SCALING: Starts at 400px, grows up to 800px on 4K/8K screens */
+        maxWidth: 'clamp(400px, 30vw, 800px)', 
         display: 'flex',
         flexDirection: 'column',
       }}>
         <Link to="/" style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          color: 'var(--color-text-muted)',
-          fontSize: 'var(--font-size-sm)',
-          marginBottom: 40,
+          color: '#a1a1aa',
+          fontSize: 'clamp(14px, 1vw, 20px)',
+          marginBottom: 'clamp(20px, 3vw, 60px)',
           textDecoration: 'none',
         }}>
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={18} /> Back
         </Link>
 
         <h1 style={{
-          fontSize: 'var(--font-size-3xl)',
+          fontSize: 'clamp(32px, 3vw, 64px)', // Fluid Typography for 4K
           fontWeight: 700,
           letterSpacing: '-0.02em',
-          marginBottom: 8,
+          marginBottom: 'clamp(8px, 1vw, 16px)',
         }}>
           Welcome back
         </h1>
         <p style={{
-          color: 'var(--color-text-secondary)',
-          fontSize: 'var(--font-size-sm)',
-          marginBottom: 32,
+          color: '#a1a1aa',
+          fontSize: 'clamp(14px, 1vw, 24px)',
+          marginBottom: 'clamp(24px, 3vw, 48px)',
         }}>
-          Sign in to your account
+          Sign in to your VT Operations account
         </p>
 
         {error && (
           <div style={{
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-error-bg)',
-            border: '1px solid var(--color-error)',
-            color: 'var(--color-error)',
-            fontSize: 'var(--font-size-sm)',
-            marginBottom: 16,
+            padding: 'clamp(12px, 1vw, 20px)',
+            borderRadius: '8px',
+            background: '#3f0000',
+            border: '1px solid #7f0000',
+            color: '#ffb3b3',
+            fontSize: 'clamp(14px, 1vw, 20px)',
+            marginBottom: 'clamp(16px, 2vw, 32px)',
           }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(16px, 1.5vw, 32px)' }}>
           <div>
             <label style={{
               display: 'block',
-              fontSize: 'var(--font-size-sm)',
+              fontSize: 'clamp(14px, 1vw, 20px)',
               fontWeight: 500,
-              marginBottom: 6,
+              marginBottom: '8px',
             }}>
               Email
             </label>
             <input
               type="email" required value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="you@company.com"
+              placeholder="admin@venkat.tech"
               style={{
-                width: '100%', padding: '9px 12px',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: 'var(--font-size-sm)',
-                background: 'var(--color-background)',
-                color: 'var(--color-text-primary)',
+                width: '100%', 
+                padding: 'clamp(12px, 1vw, 20px)',
+                border: '1px solid #2a2a2a',
+                borderRadius: '8px',
+                fontSize: 'clamp(16px, 1vw, 24px)',
+                background: '#121212',
+                color: '#ffffff',
                 outline: 'none',
                 boxSizing: 'border-box',
               }}
@@ -113,11 +117,11 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <label style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500 }}>Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ fontSize: 'clamp(14px, 1vw, 20px)', fontWeight: 500 }}>Password</label>
               <Link to="/forgot-password" style={{
-                fontSize: 'var(--font-size-xs)',
-                color: 'var(--color-text-muted)',
+                fontSize: 'clamp(12px, 0.8vw, 18px)',
+                color: '#a1a1aa',
                 textDecoration: 'none',
               }}>
                 Forgot password?
@@ -130,12 +134,14 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 style={{
-                  width: '100%', padding: '9px 36px 9px 12px',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--font-size-sm)',
-                  background: 'var(--color-background)',
-                  color: 'var(--color-text-primary)',
+                  width: '100%', 
+                  padding: 'clamp(12px, 1vw, 20px)',
+                  paddingRight: 'clamp(40px, 3vw, 60px)',
+                  border: '1px solid #2a2a2a',
+                  borderRadius: '8px',
+                  fontSize: 'clamp(16px, 1vw, 24px)',
+                  background: '#121212',
+                  color: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
@@ -144,14 +150,14 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setShowPw(s => !s)}
                 style={{
-                  position: 'absolute', right: 10, top: '50%',
+                  position: 'absolute', right: '12px', top: '50%',
                   transform: 'translateY(-50%)',
                   border: 'none', background: 'transparent',
-                  cursor: 'pointer', color: 'var(--color-text-muted)',
+                  cursor: 'pointer', color: '#a1a1aa',
                   padding: 0, display: 'flex',
                 }}
               >
-                {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </div>
@@ -159,36 +165,21 @@ export default function LoginPage() {
           <button
             type="submit" disabled={loading}
             style={{
-              padding: '10px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-action)',
-              color: 'var(--color-action-text)',
-              border: 'none', fontWeight: 600,
-              fontSize: 'var(--font-size-sm)',
+              padding: 'clamp(14px, 1.2vw, 24px)',
+              borderRadius: '8px',
+              background: '#ffffff',
+              color: '#000000',
+              border: 'none', 
+              fontWeight: 600,
+              fontSize: 'clamp(16px, 1vw, 24px)',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
-              marginTop: 4,
+              marginTop: '8px',
             }}
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-
-        <p style={{
-          fontSize: 'var(--font-size-sm)',
-          color: 'var(--color-text-muted)',
-          marginTop: 20,
-          textAlign: 'center',
-        }}>
-          Don't have an account?{' '}
-          <Link to="/register" style={{
-            color: 'var(--color-text-primary)',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}>
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );
