@@ -20,13 +20,22 @@ export const securityHeaders = helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 });
 
-/** CORS — allow configured origins only */
+/** CORS — allow configured origins + all Vercel preview URLs */
 export const corsMiddleware = cors({
   origin: (origin, cb) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return cb(null, true);
+
+    // Allow all Vercel preview and production deployments
+    if (origin.endsWith('.vercel.app')) return cb(null, true);
+
+    // Allow configured origins
     const allowed = (process.env.CORS_ORIGINS || 'http://localhost:5173')
       .split(',')
       .map(s => s.trim());
-    if (!origin || allowed.includes(origin)) return cb(null, true);
+
+    if (allowed.includes(origin)) return cb(null, true);
+
     cb(new Error(`CORS: Origin ${origin} not allowed`));
   },
   credentials: true,
@@ -46,7 +55,7 @@ export const generalLimiter = rateLimit({
 
 /** Stricter limiter for auth endpoints */
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: 'Too many auth attempts. Try again in 15 minutes.' },
   standardHeaders: true,
