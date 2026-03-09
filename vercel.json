@@ -1,14 +1,26 @@
 {
   "version": 2,
-  "installCommand": "cd frontend && npm install --include=dev",
-  "buildCommand": "cd frontend && npm run build",
+  "installCommand": "npm install",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/(.*)",     "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "env": {
     "NODE_ENV": "production"
   }
 }
+```
+
+---
+
+## Steps:
+1. Go to **GitHub → `api/index.js`** → ✏️ → paste File 1 → **Commit directly to main** ✅
+2. Go to **GitHub → `vercel.json`** → ✏️ → paste File 2 → **Commit directly to main** ✅
+3. Wait for Vercel to redeploy automatically
+4. Try login:
+```
+Email    → superadmin@test.com
+Password → Admin@123
