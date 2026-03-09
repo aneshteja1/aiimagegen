@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { authApi } from '../services/api.js';
+import { authApi, creditsApi } from '../services/api.js';
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -12,7 +12,12 @@ const useAuthStore = create((set, get) => ({
     if (!token) return set({ isLoading: false });
     try {
       const { data } = await authApi.me();
-      set({ user: data, credits: data.credit_balance ?? 0, isAuthenticated: true, isLoading: false });
+      set({ 
+        user: data, 
+        credits: data.credit_balance ?? 0, 
+        isAuthenticated: true, 
+        isLoading: false 
+      });
     } catch {
       localStorage.removeItem('aifs_access_token');
       localStorage.removeItem('aifs_refresh_token');
@@ -24,7 +29,11 @@ const useAuthStore = create((set, get) => ({
     const { data } = await authApi.login({ email, password });
     localStorage.setItem('aifs_access_token', data.accessToken);
     localStorage.setItem('aifs_refresh_token', data.refreshToken);
-    set({ user: data.user, credits: data.user.credit_balance ?? 0, isAuthenticated: true });
+    set({ 
+      user: data.user, 
+      credits: data.user.credit_balance ?? 0, 
+      isAuthenticated: true 
+    });
     return data;
   },
 
@@ -36,14 +45,14 @@ const useAuthStore = create((set, get) => ({
     set({ user: null, credits: 0, isAuthenticated: false });
   },
 
-  register: (data) => authApi.register(data),
-  forgotPassword: (email) => authApi.forgotPassword({ email }),
+  register:      (data)            => authApi.register(data),
+  forgotPassword:(email)           => authApi.forgotPassword({ email }),
   resetPassword: (token, password) => authApi.resetPassword({ token, password }),
+  setCredits:    (n)               => set({ credits: n }),
 
-  setCredits: (n) => set({ credits: n }),
   refreshCredits: async () => {
     try {
-      const { data } = await import('../services/api.js').then(m => m.creditsApi.balance());
+      const { data } = await creditsApi.balance();
       set({ credits: data.balance });
     } catch { /* ignore */ }
   },
