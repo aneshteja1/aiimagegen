@@ -1,0 +1,67 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  AZURE_WEBAPP_NAME: aifashion-backend
+  AZURE_RESOURCE_GROUP: rg-aifashion
+  NODE_VERSION: '20.x'
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildFrontend
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+          - script: |
+              cd frontend
+              npm ci
+              npm run build
+            displayName: 'Build Frontend'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: frontend/dist
+              artifactName: frontend-dist
+
+      - job: BuildBackend
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+          - script: |
+              cd backend
+              npm ci --production
+            displayName: 'Install Backend Dependencies'
+          - task: ArchiveFiles@2
+            inputs:
+              rootFolderOrFile: backend
+              includeRootFolder: false
+              archiveFile: $(Build.ArtifactStagingDirectory)/backend.zip
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: $(Build.ArtifactStagingDirectory)/backend.zip
+              artifactName: backend-zip
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - deployment: DeployBackend
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  inputs:
+                    azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+                    appType: webAppLinux
+                    appName: $(AZURE_WEBAPP_NAME)
+                    package: $(Pipeline.Workspace)/backend-zip/backend.zip
+                    runtimeStack: 'NODE|20-lts'
+                    startUpCommand: 'node src/server.js'

@@ -1,0 +1,99 @@
+/* ============================================================
+   AI FASHION STUDIO — THEME
+   SINGLE SOURCE OF TRUTH: Edit only this file to retheme
+   the entire application.
+   ============================================================ */
+
+:root {
+  /* Backgrounds */
+  --color-background: #ffffff;
+  --color-surface: #f5f5f5;
+  --color-surface-raised: #fafafa;
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Borders */
+  --color-border: #e5e5e5;
+  --color-border-strong: #d4d4d4;
+
+  /* Text */
+  --color-text-primary: #171717;
+  --color-text-secondary: #525252;
+  --color-text-muted: #a3a3a3;
+  --color-text-disabled: #d4d4d4;
+  --color-text-inverse: #ffffff;
+
+  /* Actions */
+  --color-action: #171717;
+  --color-action-hover: #262626;
+  --color-action-text: #ffffff;
+  --color-action-secondary: #f5f5f5;
+  --color-action-secondary-hover: #e5e5e5;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-success-bg: #f0fdf4;
+  --color-warning: #d97706;
+  --color-warning-bg: #fffbeb;
+  --color-error: #dc2626;
+  --color-error-bg: #fef2f2;
+  --color-info: #2563eb;
+  --color-info-bg: #eff6ff;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Typography */
+  --font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: clamp(10px, 0.7vw, 11px);
+  --font-size-sm: clamp(12px, 0.9vw, 13px);
+  --font-size-base: clamp(14px, 1vw, 15px);
+  --font-size-lg: clamp(15px, 1.1vw, 17px);
+  --font-size-xl: clamp(17px, 1.3vw, 20px);
+  --font-size-2xl: clamp(20px, 1.7vw, 24px);
+  --font-size-3xl: clamp(24px, 2.1vw, 30px);
+  --font-size-4xl: clamp(28px, 2.5vw, 36px);
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows (minimal) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --transition-fast: 100ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* Sidebar */
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 60px;
+  --topnav-height: 56px;
+}
+
+/* High-DPI scaling — content grows on large screens */
+@media (min-width: 2560px) {
+  :root {
+    --sidebar-width: 280px;
+    --topnav-height: 64px;
+  }
+}
+
+@media (min-width: 3840px) {
+  :root {
+    --sidebar-width: 320px;
+    --topnav-height: 72px;
+  }
+}
