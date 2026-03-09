@@ -1,5 +1,3 @@
-// Mock companies data — used as initial state in companyStore
-// Real data is fetched from API after login
 export const MOCK_COMPANIES = [
   {
     id: 'c0000001-0000-0000-0000-000000000001',
