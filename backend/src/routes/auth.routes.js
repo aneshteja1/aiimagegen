@@ -1,176 +1,95 @@
 import { Router } from 'express';
-import { body, validationResult } from 'express-validator';
-import {
-  findUserByEmail, findUserById, registerUser,
-  comparePassword, signAccessToken, signRefreshToken,
-  saveRefreshToken, validateRefreshToken, revokeRefreshToken,
-  createPasswordResetToken, resetPassword,
-} from '../services/auth.service.js';
-import { sendPasswordResetEmail, sendWelcomeEmail } from '../services/email.service.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
-import { authLimiter } from '../middleware/security.middleware.js';
-import { query } from '../db/connection.js';
+import { query, transaction } from '../db/connection.js';
 
 const router = Router();
 
-// ── POST /api/auth/register ───────────────────────────────────
-router.post('/register',
-  authLimiter,
-  [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email required.'),
-    body('password').isLength({ min: 8 }).matches(/[A-Z]/).matches(/[0-9]/)
-      .withMessage('Password must be 8+ chars with at least one uppercase letter and number.'),
-    body('full_name').trim().isLength({ min: 2, max: 200 }).withMessage('Full name required.'),
-    body('company_name').optional().trim().isLength({ max: 200 }),
-  ],
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(422).json({ error: errors.array()[0].msg });
-
-    try {
-      const user = await registerUser(req.body);
-      // Fire-and-forget welcome email
-      sendWelcomeEmail(user.email, user.full_name).catch(console.error);
-      res.status(201).json({ message: 'Registration submitted. Pending admin approval.', userId: user.id });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// ── POST /api/auth/login ──────────────────────────────────────
-router.post('/login',
-  authLimiter,
-  [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-  ],
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(422).json({ error: 'Email and password required.' });
-
-    try {
-      const { email, password } = req.body;
-      const user = await findUserByEmail(email);
-
-      if (!user || !(await comparePassword(password, user.password_hash))) {
-        return res.status(401).json({ error: 'Incorrect email or password.' });
-      }
-
-      if (user.status === 'rejected') {
-        return res.status(403).json({ error: 'Your account has been rejected. Contact support.' });
-      }
-
-      // Update last login
-      await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
-
-      const accessToken = signAccessToken(user);
-      const rawRefresh = signRefreshToken(user.id);
-      await saveRefreshToken(user.id, rawRefresh, req.headers['user-agent'], req.ip);
-
-      // Remove sensitive field
-      const { password_hash, ...safeUser } = user;
-
-      res.json({
-        accessToken,
-        refreshToken: rawRefresh,
-        user: safeUser,
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// ── POST /api/auth/refresh ────────────────────────────────────
-router.post('/refresh', async (req, res, next) => {
-  const rawToken = req.body.refreshToken;
-  if (!rawToken) return res.status(400).json({ error: 'Refresh token required.' });
+// ── 1. BULK UPLOAD & JOB CREATION ────────────────────────────
+// Clients upload 100-1000 images in a ZIP [cite: 23]
+router.post('/bulk-generate', requireAuth, async (req, res, next) => {
+  const { type, prompt, fileUrls } = req.body;
+  const { company_id, id: user_id } = req.user;
 
   try {
-    const tokenRow = await validateRefreshToken(rawToken);
-    if (!tokenRow) return res.status(401).json({ error: 'Invalid or expired refresh token.' });
+    // The Postgres trigger automatically deducts credits and logs the transaction!
+    const result = await query(
+      `INSERT INTO jobs (company_id, user_id, type, status, input_files, prompt)
+       VALUES ($1, $2, $3, 'queued', $4, $5) RETURNING *`,
+      [company_id, user_id, type, fileUrls, prompt]
+    );
 
-    const user = await findUserById(tokenRow.user_id);
-    if (!user) return res.status(401).json({ error: 'User not found.' });
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.message.includes('Insufficient credits')) {
+      return res.status(402).json({ error: 'Please purchase more credits to process this batch.' });
+    }
+    next(err);
+  }
+});
 
-    // Rotate token
-    await revokeRefreshToken(rawToken);
-    const newRefresh = signRefreshToken(user.id);
-    await saveRefreshToken(user.id, newRefresh, req.headers['user-agent'], req.ip);
+// ── 2. LIVE DATA FETCHING (Tenant Isolated) ──────────────────
+router.get('/live-status', requireAuth, async (req, res, next) => {
+  const { company_id, role } = req.user;
+  try {
+    let sql = `SELECT * FROM jobs `;
+    let params = [];
 
-    const { password_hash, ...safeUser } = user;
-    res.json({
-      accessToken: signAccessToken(user),
-      refreshToken: newRefresh,
-      user: safeUser,
-    });
+    // Security: Superadmins see all, clients only see their own workspace 
+    if (role !== 'superadmin') {
+      sql += `WHERE company_id = $1 ORDER BY created_at DESC LIMIT 50`;
+      params.push(company_id);
+    } else {
+      sql += `ORDER BY created_at DESC LIMIT 100`;
+    }
+
+    const jobs = await query(sql, params);
+    
+    // Get real-time credit balance
+    const company = await query(`SELECT credit_balance FROM companies WHERE id = $1`, [company_id]);
+
+    res.json({ jobs: jobs.rows, credits: company.rows[0]?.credit_balance });
   } catch (err) {
     next(err);
   }
 });
 
-// ── POST /api/auth/logout ─────────────────────────────────────
-router.post('/logout', requireAuth, async (req, res, next) => {
-  const rawToken = req.body.refreshToken;
+// ── 3. VENKAT TECH WORKFLOW APPROVAL ─────────────────────────
+// AI Generate -> Venkat Tech Retouch -> Client Approval 
+router.post('/:id/approve', requireAuth, async (req, res, next) => {
+  const { id } = req.params;
+  const { role, company_id } = req.user;
+  const { action } = req.body; // 'retouch_complete' or 'client_approve'
+
   try {
-    if (rawToken) await revokeRefreshToken(rawToken);
-    res.json({ message: 'Logged out.' });
+    let newStatus = '';
+    
+    if (action === 'retouch_complete' && role === 'superadmin') {
+      newStatus = 'pending_approval'; // Sent to client
+    } else if (action === 'client_approve') {
+      newStatus = 'completed'; // Final delivery [cite: 51]
+    } else {
+      return res.status(403).json({ error: 'Unauthorized workflow action.' });
+    }
+
+    const result = await query(
+      `UPDATE jobs SET status = $1 WHERE id = $2 AND (company_id = $3 OR $4 = 'superadmin') RETURNING *`,
+      [newStatus, id, company_id, role]
+    );
+
+    res.json(result.rows[0]);
   } catch (err) {
     next(err);
   }
 });
 
-// ── POST /api/auth/forgot-password ───────────────────────────
-router.post('/forgot-password',
-  authLimiter,
-  [body('email').isEmail().normalizeEmail()],
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(422).json({ error: 'Valid email required.' });
-
-    try {
-      const user = await findUserByEmail(req.body.email);
-      // Always return 200 to prevent email enumeration attacks
-      if (user) {
-        const rawToken = await createPasswordResetToken(user.id);
-        sendPasswordResetEmail(user.email, rawToken, user.full_name).catch(console.error);
-      }
-      res.json({ message: 'If that email exists, a reset link has been sent.' });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// ── POST /api/auth/reset-password ────────────────────────────
-router.post('/reset-password',
-  authLimiter,
-  [
-    body('token').notEmpty().withMessage('Token required.'),
-    body('password').isLength({ min: 8 }).matches(/[A-Z]/).matches(/[0-9]/)
-      .withMessage('Password must be 8+ chars with uppercase letter and number.'),
-  ],
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(422).json({ error: errors.array()[0].msg });
-
-    try {
-      await resetPassword(req.body.token, req.body.password);
-      res.json({ message: 'Password reset successfully. You may now log in.' });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// ── GET /api/auth/me ──────────────────────────────────────────
-router.get('/me', requireAuth, async (req, res, next) => {
+// ── 4. GDPR COMPLIANCE & SECURITY ────────────────────────────
+// Allows clients to delete their data 
+router.delete('/gdpr/delete-data', requireAuth, async (req, res, next) => {
+  const { company_id } = req.user;
   try {
-    const user = await findUserById(req.user.sub);
-    if (!user) return res.status(404).json({ error: 'User not found.' });
-    const { password_hash, ...safeUser } = user;
-    res.json(safeUser);
+    // Cascading delete will remove jobs, avatars, and transactions
+    await query(`DELETE FROM companies WHERE id = $1`, [company_id]);
+    res.json({ message: 'All company data has been securely deleted in compliance with GDPR.' });
   } catch (err) {
     next(err);
   }
