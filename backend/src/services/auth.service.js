@@ -37,7 +37,7 @@ export function signAccessToken(user) {
 }
 
 export function signRefreshToken(userId) {
-  return jwt.sign({ sub: userId }, process.env.JWT_REFRESH_SECRET, {
+  return jwt.sign({ sub: userId }, process.env.JWT_REFRESH_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET, {
     expiresIn: REFRESH_EXPIRES,
   });
 }
@@ -50,9 +50,17 @@ export function verifyRefreshToken(token) {
   return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 }
 
-// ── Auth Operations ───────────────────────────────────────────
+// ── Auth Operations (FIXED: Added LEFT JOIN and LOWER) ────────
 export async function findUserByEmail(email) {
-  return queryOne('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
+  // LEFT JOIN ensures the user is found even if company_id is null or missing in companies table
+  const sql = `
+    SELECT u.*, c.name AS company_name, c.slug AS company_slug, c.subscription_plan 
+    FROM users u
+    LEFT JOIN companies c ON c.id = u.company_id
+    WHERE LOWER(u.email) = LOWER($1)
+    LIMIT 1
+  `;
+  return queryOne(sql, [email]);
 }
 
 export async function findUserById(id) {
@@ -67,12 +75,12 @@ export async function findUserById(id) {
 
 export async function registerUser({ email, password, full_name, company_name }) {
   return transaction(async ({ query: q, queryOne: qOne }) => {
+    const emailLower = email.toLowerCase();
     // Check duplicate email
-    const existing = await qOne('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
+    const existing = await qOne('SELECT id FROM users WHERE LOWER(email) = $1', [emailLower]);
     if (existing) throw Object.assign(new Error('Email already registered.'), { status: 409 });
 
     let companyId = null;
-    // If company_name provided, find or create company
     if (company_name && company_name.trim()) {
       const slug = company_name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
       let co = await qOne('SELECT id FROM companies WHERE slug = $1', [slug]);
@@ -90,7 +98,7 @@ export async function registerUser({ email, password, full_name, company_name })
     const res = await q(
       `INSERT INTO users (email, password_hash, full_name, company_id, role, status)
        VALUES ($1, $2, $3, $4, 'user', 'pending') RETURNING id, email, full_name, role, status, company_id`,
-      [email.toLowerCase(), passwordHash, full_name.trim(), companyId]
+      [emailLower, passwordHash, full_name.trim(), companyId]
     );
     return res.rows[0];
   });
@@ -99,7 +107,7 @@ export async function registerUser({ email, password, full_name, company_name })
 // ── Refresh Token Management ──────────────────────────────────
 export async function saveRefreshToken(userId, rawToken, userAgent, ipAddress) {
   const hash = hashToken(rawToken);
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); 
   await query(
     `INSERT INTO refresh_tokens (user_id, token_hash, expires_at, user_agent, ip_address)
      VALUES ($1, $2, $3, $4, $5)`,
@@ -135,7 +143,6 @@ export async function revokeAllUserTokens(userId) {
 
 // ── Password Reset ────────────────────────────────────────────
 export async function createPasswordResetToken(userId) {
-  // Invalidate old tokens first
   await query(
     `UPDATE password_reset_tokens SET used_at = NOW()
      WHERE user_id = $1 AND used_at IS NULL`,
@@ -151,7 +158,7 @@ export async function createPasswordResetToken(userId) {
     [userId, hash, expiresAt]
   );
 
-  return rawToken; // Send this to the user via email
+  return rawToken;
 }
 
 export async function validatePasswordResetToken(rawToken) {
@@ -173,7 +180,6 @@ export async function resetPassword(rawToken, newPassword) {
   return transaction(async ({ query: q }) => {
     await q(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, tokenRow.user_id]);
     await q(`UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = $1`, [hashToken(rawToken)]);
-    // Revoke all refresh tokens for security
     await q(`UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, [tokenRow.user_id]);
   });
 }
