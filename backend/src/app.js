@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.get('/health',     (req, res) => res.json({ status: 'ok', platform: process.env.PLATFORM || 'unknown', ts: new Date().toISOString() }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', platform: process.env.PLATFORM || 'unknown', ts: new Date().toISOString() }));
 
-// API Routes — mounted at BOTH /api/* and /* for Vercel compatibility
+// API Routes with /api prefix
 app.use('/api/auth',      authRoutes);
 app.use('/api/users',     usersRoutes);
 app.use('/api/companies', companiesRouter);
@@ -32,7 +32,7 @@ app.use('/api/credits',   creditsRouter);
 app.use('/api/generate',  generateRoutes);
 app.use('/api/payments',  paymentsRoutes);
 
-// Also mount without /api prefix (Vercel strips /api from URL)
+// Same routes without /api prefix (Vercel compatibility)
 app.use('/auth',      authRoutes);
 app.use('/users',     usersRoutes);
 app.use('/companies', companiesRouter);
@@ -43,7 +43,13 @@ app.use('/generate',  generateRoutes);
 app.use('/payments',  paymentsRoutes);
 
 // 404 handler
-app.use((req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Endpoint not found.',
+    method: req.method,
+    path: req.originalUrl
+  });
+});
 
 // Global error handler
 app.use(errorHandler);
