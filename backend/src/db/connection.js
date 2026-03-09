@@ -4,31 +4,17 @@ dotenv.config();
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  console.error('FATAL: DATABASE_URL environment variable is not set.');
-  process.exit(1);
-}
-
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  max: 3,
+  max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected PostgreSQL pool error:', err);
-});
+pool.on('error', (err) => console.error('Unexpected PG pool error:', err));
 
 export async function query(text, params = []) {
-  const start = Date.now();
-  const res = await pool.query(text, params);
-  const duration = Date.now() - start;
-  if (process.env.NODE_ENV === 'development' && duration > 200) {
-    console.warn(`[DB SLOW] ${duration}ms — ${text.slice(0, 80)}`);
-  }
-  return res;
+  return pool.query(text, params);
 }
 
 export async function queryOne(text, params = []) {
@@ -56,5 +42,3 @@ export async function transaction(fn) {
     client.release();
   }
 }
-
-export { pool };
