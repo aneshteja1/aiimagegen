@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- Fluid Design System ---- */
+:root {
+  --fluid-gap: clamp(1rem, 2.5vw, 5rem);
+  --vt-black: #050505;
+  --vt-dark-gray: #121212;
+  --vt-white: #ffffff;
+}
+
 /* ---- Reset & Base ---- */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -25,6 +33,15 @@ body {
   background-color: var(--color-background);
   line-height: 1.5;
   overflow-x: hidden;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  max-width: 3840px;
+  min-height: 100vh;
 }
 
 img, video {
@@ -79,23 +96,27 @@ a {
 }
 
 .page-container {
-  padding: var(--space-6);
+  padding: var(--fluid-gap);
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
 }
 
+.container {
+  padding: var(--fluid-gap);
+  width: 100%;
+  box-sizing: border-box;
+}
+
 @media (min-width: 2560px) {
   .page-container {
     max-width: 2000px;
-    padding: var(--space-8);
   }
 }
 
 @media (min-width: 3840px) {
   .page-container {
     max-width: 3000px;
-    padding: 48px;
   }
 }
 
@@ -155,7 +176,7 @@ a {
   border-radius: var(--radius-sm);
 }
 
-/* ---- Pulse for processing ---- */
+/* ---- Pulse ---- */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
