@@ -1,0 +1,118 @@
+/* Reusing the variables from your dashboard.css */
+
+.page-container {
+  max-width: clamp(800px, 60vw, 2400px);
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 4rem);
+}
+
+.form-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: clamp(1.5rem, 3vw, 4rem);
+}
+
+.form-header {
+  margin-bottom: clamp(1.5rem, 2vw, 3rem);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+.form-header h2 {
+  font-size: var(--font-xl);
+  margin: 0 0 0.5rem 0;
+}
+
+.form-header p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  margin: 0;
+}
+
+.vt-form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 1.5vw, 2.5rem);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.vt-input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: clamp(0.75rem, 1vw, 1.5rem);
+  border-radius: 8px;
+  font-size: var(--font-base);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.vt-input:focus {
+  border-color: var(--color-text-secondary);
+}
+
+/* Custom Drag & Drop styling for the file input */
+.drag-drop-zone {
+  background: var(--color-bg);
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  padding: clamp(2rem, 4vw, 6rem);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.drag-drop-zone:hover {
+  border-color: var(--color-text-secondary);
+  background: #0a0a0a;
+}
+
+.file-label {
+  cursor: pointer;
+  color: var(--color-text-primary) !important;
+  font-size: var(--font-base) !important;
+  text-transform: none !important;
+}
+
+.vt-button {
+  padding: clamp(0.75rem, 1.5vw, 2rem);
+  border-radius: 8px;
+  font-size: var(--font-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  border: none;
+}
+
+.vt-button.primary {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.vt-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-message {
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: var(--font-sm);
+  text-align: center;
+}
+
+.status-message.success { background: #18181b; border: 1px solid #27272a; }
+.status-message.error { background: #3f0000; color: #ffb3b3; border: 1px solid #7f0000; }
