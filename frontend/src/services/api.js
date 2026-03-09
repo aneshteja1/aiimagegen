@@ -7,8 +7,15 @@ async function fetchWithAuth(endpoint, options = {}) {
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
-  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+
+  // VERCEL FIX: Prevent double-slashes (e.g., https://domain.com//api/...)
+  const baseUrl = (API_URL || '').replace(/\/$/, ''); // Removes trailing slash if it exists
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // Execute the fetch with the cleaned URL
+  const response = await fetch(`${baseUrl}${cleanEndpoint}`, { ...options, headers });
   const data = await response.json();
+  
   if (!response.ok) throw data;
   return { data };
 }
