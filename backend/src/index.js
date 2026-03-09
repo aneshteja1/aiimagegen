@@ -3,13 +3,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// VERCEL FIX: Only listen on a port if running locally
+// VERCEL COMPATIBILITY: 
+// We export the 'app' so the vercel.json destination can find it.
+// We only call app.listen if we are running on your local laptop.
+
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
-    console.log(`Server running locally on port ${PORT}`);
+    console.log(`Local server running on http://localhost:${PORT}`);
   });
 }
 
-// Export the Express app so Vercel can run it
 export default app;
