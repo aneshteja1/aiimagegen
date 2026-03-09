@@ -11,7 +11,7 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   max: 3,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
@@ -21,7 +21,6 @@ pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL pool error:', err);
 });
 
-/** Execute a query. Returns rows. */
 export async function query(text, params = []) {
   const start = Date.now();
   const res = await pool.query(text, params);
@@ -32,13 +31,11 @@ export async function query(text, params = []) {
   return res;
 }
 
-/** Get a single row or null. */
 export async function queryOne(text, params = []) {
   const res = await pool.query(text, params);
   return res.rows[0] || null;
 }
 
-/** Use a transaction. fn receives a {query, queryOne} scoped to the client. */
 export async function transaction(fn) {
   const client = await pool.connect();
   try {
