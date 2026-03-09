@@ -92,3 +92,5 @@ Vercel reads vercel.json      → Frontend (static) + Backend (serverless at /ap
 Azure reads azure-deploy.yml  → Frontend (Static Web Apps) + Backend (App Service)
 Both connect to               → Same Supabase PostgreSQL database
 ```
+
+5. Commit directly to main ✅ 
