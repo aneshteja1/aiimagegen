@@ -1,90 +1,81 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import useAuthStore from '../store/authStore';
+import { jobsApi } from '../services/api';
+import '../styles/dashboard.css';
 
-const Dashboard = () => {
-  const { user, accessToken } = useAuthStore();
-  const [liveData, setLiveData] = useState({ jobs: [], credits: 0 });
+export default function Dashboard() {
+  const { user, credits, setCredits, logout } = useAuthStore();
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // 1. Live Data Polling mechanism
-  useEffect(() => {
-    const fetchLiveStatus = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/jobs/live-status`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setLiveData(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch live data");
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const { data } = await jobsApi.getLiveStatus();
+      setJobs(data.jobs);
+      if (data.credits !== undefined && data.credits !== credits) {
+        setCredits(data.credits);
       }
-    };
+    } catch (err) {
+      console.error("Live sync failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [credits, setCredits]);
 
-    fetchLiveStatus(); // Initial fetch
-    const interval = setInterval(fetchLiveStatus, 5000); // Poll every 5 seconds for "live" feel
-
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 3000); // Live polling
     return () => clearInterval(interval);
-  }, [accessToken]);
+  }, [fetchDashboardData]);
 
-  // 2. Client Approval Function [cite: 51]
-  const handleClientApprove = async (jobId) => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/jobs/${jobId}/approve`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}` 
-      },
-      body: JSON.stringify({ action: 'client_approve' })
-    });
-    // The polling will automatically update the UI on the next tick
-  };
+  if (loading) return <div className="dashboard-container">Loading...</div>;
 
   return (
-    <div className="dashboard-layout">
-      <header>
-        <h1>{user.role === 'superadmin' ? 'VT Studio Admin' : 'Client Workspace'}</h1>
-        <div className="credit-badge">
-          Credits Remaining: <strong>{liveData.credits}</strong>
+    <div className="dashboard-container">
+      <header className="dashboard-header">
+        <div>
+          <h1>{user?.role === 'superadmin' ? 'VT Operations Control' : 'Client Workspace'}</h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Welcome back, {user?.full_name}</p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="credit-pill">
+            <span>Credits:</span>
+            <strong style={{ color: '#fff', fontSize: '1.2em' }}>{credits}</strong>
+          </div>
+          <button onClick={logout} style={{ background: 'transparent', color: '#fff', border: '1px solid var(--color-border)', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
+            Log Out
+          </button>
         </div>
       </header>
 
-      <div className="job-queue">
-        <h2>Active Generations</h2>
+      <div className="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Job ID</th>
               <th>Type</th>
               <th>Status</th>
+              <th>Workflow Stage</th>
               <th>Cost</th>
-              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {liveData.jobs.map(job => (
-              <tr key={job.id}>
-                <td>{job.id.substring(0, 8)}...</td>
-                <td>{job.type}</td>
-                <td>
-                  <span className={`status-badge ${job.status}`}>{job.status}</span>
-                </td>
-                <td>{job.credits_used}</td>
-                <td>
-                  {job.status === 'pending_approval' && user.role !== 'superadmin' && (
-                    <button onClick={() => handleClientApprove(job.id)}>Approve Final</button>
-                  )}
-                  {job.status === 'pending_retouch' && user.role === 'superadmin' && (
-                    <button onClick={() => console.log('Admin opens retouch tool')}>Retouch</button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {jobs.length === 0 ? (
+              <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>No jobs found.</td></tr>
+            ) : (
+              jobs.map(job => (
+                <tr key={job.id}>
+                  <td style={{ fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>...{job.id.slice(-8)}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{job.type.replace('_', ' ')}</td>
+                  <td><span className="status-badge">{job.status}</span></td>
+                  <td style={{ textTransform: 'capitalize', color: 'var(--color-text-secondary)' }}>{job.workflow_stage.replace(/_/g, ' ')}</td>
+                  <td>{job.credits_used}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
