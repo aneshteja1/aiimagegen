@@ -18,20 +18,23 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 300));
-    const result = login(email, password);
-    setLoading(false);
-    if (!result.success) { setError(result.error); return; }
-    if (isPending()) { navigate('/pending'); return; }
-    if (isRejected()) { navigate('/rejected'); return; }
-    navigate(from, { replace: true });
+    try {
+      await login(email, password);
+      if (isPending()) { navigate('/pending'); return; }
+      if (isRejected()) { navigate('/rejected'); return; }
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err?.error || err?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const hints = [
-    { role: 'Super Admin', email: 'superadmin@test.com', pass: 'Admin@123' },
-    { role: 'Company Admin', email: 'admin@companya.com', pass: 'Admin@123' },
-    { role: 'User', email: 'user@companya.com', pass: 'User@123' },
-    { role: 'Pending', email: 'pending@companya.com', pass: 'User@123' },
+    { role: 'Super Admin',   email: 'superadmin@test.com',    pass: 'Admin@123' },
+    { role: 'Company Admin', email: 'admin@lumiere.com',       pass: 'Admin@123' },
+    { role: 'User',          email: 'user@lumiere.com',        pass: 'User@123' },
+    { role: 'Studio Nova',   email: 'admin@studionova.com',    pass: 'Admin@123' },
   ];
 
   return (
