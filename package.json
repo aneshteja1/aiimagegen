@@ -1,32 +1,29 @@
 {
-  "name": "ai-fashion-studio",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "node --watch backend/src/server.js",
-    "build": "cd frontend && npm install && npm run build",
-    "start": "node backend/src/server.js"
+  "version": 2,
+  "installCommand": "npm install",
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null,
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
   },
-  "dependencies": {
-    "@google-cloud/vertexai": "^1.1.0",
-    "@google/generative-ai": "^0.24.1",
-    "bcrypt": "^5.1.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-rate-limit": "^7.3.1",
-    "express-validator": "^7.1.0",
-    "formidable": "^3.5.3",
-    "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.14",
-    "pg": "^8.12.0",
-    "stripe": "^16.2.0",
-    "uuid": "^10.0.0"
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/(.*)",     "destination": "/index.html" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
   },
-  "engines": {
-    "node": "22.x"
-  }
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options",        "value": "DENY" }
+      ]
+    }
+  ]
 }
