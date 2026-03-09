@@ -1,23 +1,13 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/vite"
+      "source": "/api/(.*)",
+      "destination": "/backend/src/index.js"
     },
     {
-      "src": "backend/src/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/backend/src/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/dist/$1"
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ]
 }
