@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MOCK_COMPANIES } from '../services/mock/companies.mock.js';
+import { MOCK_COMPANIES } from '../services/mock/companies.mock.js'; 
 
 const useCompanyStore = create((set, get) => ({
   companies: MOCK_COMPANIES,
